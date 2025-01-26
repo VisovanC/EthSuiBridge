@@ -1,10 +1,13 @@
 module suipart::suipart {
-    use sui::coin;
+    use sui::coin::{Self, TreasuryCap};
+    use sui::transfer;
+    use sui::tx_context::{Self, TxContext};
+    use std::option;
+
     public struct SUIPART has drop {}
-    public struct NDR has drop {}
 
     fun init(witness: SUIPART, ctx: &mut TxContext) {
-        let (treasury, metadata) = coin::create_currency<SUIPART>(
+        let (treasury_cap, metadata) = coin::create_currency<SUIPART>(
             witness,
             18,
             b"NDR",
@@ -13,25 +16,17 @@ module suipart::suipart {
             option::none(),
             ctx
         );
-        transfer::public_transfer(treasury, tx_context::sender(ctx));
+        transfer::public_transfer(treasury_cap, tx_context::sender(ctx));
         transfer::public_transfer(metadata, tx_context::sender(ctx));
     }
 
     public entry fun mint(
-        treasury_cap: &mut coin::TreasuryCap<NDR>,
+        treasury_cap: &mut TreasuryCap<SUIPART>, 
         amount: u64,
         recipient: address,
         ctx: &mut TxContext
     ) {
-        let coins = coin::mint(treasury_cap, amount, ctx);
-        transfer::public_transfer(coins, recipient);
-    }
-
-    public entry fun burn(
-        treasury_cap: &mut coin::TreasuryCap<NDR>,
-        coins: coin::Coin<NDR>,
-        _ctx: &mut TxContext
-    ) {
-        coin::burn(treasury_cap, coins);
+        let coin = coin::mint(treasury_cap, amount, ctx);
+        transfer::public_transfer(coin, recipient);
     }
 }
